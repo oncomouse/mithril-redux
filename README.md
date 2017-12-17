@@ -1,21 +1,19 @@
 [![npm version](https://badge.fury.io/js/mithril-redux.svg)](https://badge.fury.io/js/mithril-redux)
 
 # Mithril Redux
-This package provides utilites for working with Redux within a Mithril application. Similar to `react-redux`.
+This package provides utilites for working with Redux within a Mithril application. It works almost exactly like `react-redux`.
 
-It doesn't alter the redrawing functionality of Mithril, other than providing some basic middleware below. It does not subscribe to the Redux `store`. It generally allows you to continue to work with Mithril as normal, except with replacing your models with the `store`.
-
-See https://github.com/colinbate/mithril-redux-starter for a sample useage.
+It subscribes to the store and sets `state.props` to values provided by two mapping functions, one that maps `state` and the other that maps `dispatch`.
 
 It does not rely on you using the `mjsx` Babel plugin.
+
+This is a mostly complete rewrite of [colinbate/mithril-redux](https://github.com/colinbate/mithril-redux), which was compatible with Mithril 0.2. The new version changes the API for `connect()` (making it work like `react-redux`) and also makes the library compatible with Mithril 1.0.
 
 ## Usage
 
 Install with:
 
     npm install --save mithril-redux
-
-Unfortunately there isn't a UMD version available at this time.
 
 ## API
 
@@ -38,66 +36,45 @@ const store = configStore({name: 'World', age: 30});
 m.mount(document.body, Provider.init(store, m, Root));
 ```
 
-### `connect(selector, actions)(component)`
+### `connect(mapStateToProps, mapDispatchToProps)(component)`
 
 Used to turn your Mithril components into Redux-aware Mithril components. Works similar to `connect` from `react-redux`.
 
-* `selector` - A function which maps the full state to the parts needed.
-* `actions` - An object listing action creators to be injected into the controller. Or, a function which returns the said object map.
+* `mapStateToProps` - A function which provides the result of `store.getState()` and the component's own `state.props` variable and returns a list of props to add to the component's `state.props`. This function is generally used for connecting store values to component props.
+* `mapDispatchToProps` - A function which provides `store.dispatch` and the component's own `state.props` variable and returns a list of props to add to the component's `state.props`. This function is generally used to connect action creators to Redux's `dispatch` function. 
 * `component` - The Mithril component to connect.
 
 #### Example
 
 ```js
 import {connect} from 'mithril-redux';
+import {bindActionCreators} from 'redux'
 import {incrementAge, decrementAge, resetAge} from './actions';
 
-class _AgeBox {
-  view(ctrl, {age}) {
-    return m('div', [
-        m('span', 'Age: ' + age),
-        m('button', {onclick: ctrl.dec()}, 'Younger'),
-        m('button', {onclick: ctrl.inc()}, 'Older'),
-        m('button', {onclick: ctrl.reset()}, 'Reset')
-    ]);
-  }
+const AgeBox = {
+	view: function(vnode) {
+		const {state} = vnode;
+		return m('div', [
+			m('span', 'Age: ' + state.props.age),
+			m('button', {onclick: state.props.actions.dec}, 'Younger'),
+			m('button', {onclick: state.props.actions.inc}, 'Older'),
+			m('button', {onclick: state.props.actions.reset}, 'Reset')
+		]);	
+	}
 }
 
-export const AgeBox = connect((state) => ({age: state.age}), {
-  inc: incrementAge,
-  dec: decrementAge,
-  reset: resetAge
-})(_AgeBox);
+const mapStateToProps = state => ({
+	age: state.age
+})
+const mapDispatchToProps = dispatch => ({
+  actions: bindActionCreators({incrementAge, decrementAge, resetAge}, dispatch)
+})
+export default connect(mapStateToProps, mapDispatchToProps)(AgeBox);
 ```
 
-It is worth noting that the action creators exposed on the controller are actually action creator factories. Any parameters you pass in during view creation will be prepended to those passed when the action creator is eventually invoked.
+## Changes to 2.0.0
 
-For example, in the code above, if you had `ctrl.reset('Hello')`, then the `resetAge` action creator would be called with `'Hello'` as the first param and the event object as the second.
-
-Also, the `store`'s `dispatch` function is also passed to the props of the view in case necessary.
-
-### `redrawMiddleware`
-
-Adds the ability for actions to specify that they need to cause a redraw. Useful for anything async where Mithril doesn't naturally redraw. This library does not subscribe to the `store`.
-
-Trigger it by setting the `redraw` property on the action to `true`;
-
-#### Example (Setup)
-
-```js
-import { createStore, applyMiddleware } from 'redux';
-import { redrawMiddleware } from 'mithril-redux';
-import rootReducer from './reducers';
-
-export default function configureStore(initialState) {
-  const createModifiedStore = applyMiddleware(
-    redrawMiddleware
-  )(createStore);
-  return createModifiedStore(rootReducer, initialState);
-```
-
-## Future Work (possibly separate packages)
-
-* [ ] Integrate with `m.request` to get data into the store.
-* [ ] Create some sort of middleware for promises which calls `m.startComputation`/`m.endComputation`
-* [ ] Integrate with `m.route` for params and potentially more.
+* `connect` now accepts two functions as its first two parameters:
+	* One that maps from `store.getState()` to `state.props`
+	* One that maps from `store.dispatch` to `state.props`
+* The component will now be subscribed to the redux store, rather than just get updates as part of the component's own lifecycle.
