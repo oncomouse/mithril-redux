@@ -16,6 +16,21 @@ const connectFactory = Provider => (
 		updateFromStore(this)
 		Provider.mithril.redraw()
 	}
+	const newOninit = function() {
+		return function(vnode) {
+			vnode.state._preconnect_oninit(vnode)
+			updateFromStore(vnode)
+			vnode.state.unsubscribe = Provider.store.subscribe(
+				handleSubscription.bind(vnode)
+			)
+		}
+	}
+	const newOnremove = function() {
+		return function(vnode) {
+			vnode.state._preconnect_onremove()
+			vnode.state.unsubscribe()
+		}
+	}
 	if (Component.prototype && typeof Component.prototype.view === 'function') {
 		if (typeof Component.prototype.oninit === 'function') {
 			Component.prototype._preconnect_oninit = Component.prototype.oninit
@@ -27,6 +42,8 @@ const connectFactory = Provider => (
 		} else {
 			Component.prototype._preconnect_onremove = () => {}
 		}
+		Component.prototype.oninit = newOninit()
+		Component.prototype.onremove = newOnremove()
 	} else if (typeof Component.view === 'function') {
 		if (typeof Component.oninit === 'function') {
 			Component._preconnect_oninit = Component.oninit
@@ -38,19 +55,10 @@ const connectFactory = Provider => (
 		} else {
 			Component._preconnect_onremove = () => {}
 		}
+		Component.oninit = newOninit()
+		Component.onremove = newOnremove()
 	} else {
 		throw new Error(`${Component} is not a valid Mithril Component`)
-	}
-	Component.prototype.oninit = function(vnode) {
-		vnode.state._preconnect_oninit(vnode)
-		updateFromStore(vnode)
-		vnode.state.unsubscribe = Provider.store.subscribe(
-			handleSubscription.bind(vnode)
-		)
-	}
-	Component.prototype.onremove = function(vnode) {
-		vnode.state._preconnect_onremove()
-		vnode.state.unsubscribe()
 	}
 	return Component
 }

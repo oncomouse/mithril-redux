@@ -1,6 +1,6 @@
 {
   "name": "mithril-redux",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "description": "Connect Mithril components to a Redux store.",
   "main": "lib/mithril-redux.js",
   "module": "es/mithril-redux.js",
