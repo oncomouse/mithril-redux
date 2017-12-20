@@ -4,6 +4,22 @@
 	(factory((global['Mithril Redux'] = {})));
 }(this, (function (exports) { 'use strict';
 
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
+  return typeof obj;
+} : function (obj) {
+  return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
+};
+
+
+
+
+
+
+
+
+
+
+
 var classCallCheck = function (instance, Constructor) {
   if (!(instance instanceof Constructor)) {
     throw new TypeError("Cannot call a class as a function");
@@ -29,6 +45,54 @@ var identity = (function (x) {
   return x;
 });
 
+// From react-redux but adapted to match more deeply and to match functions
+
+var hasOwn = Object.prototype.hasOwnProperty;
+
+function is(x, y) {
+	if (x === y) {
+		return x !== 0 || y !== 0 || 1 / x === 1 / y;
+	} else if (typeof x === 'function' && typeof y === 'function') {
+		return x.toString() === y.toString();
+	} else {
+		return x !== x && y !== y; // eslint-disable-line no-self-compare
+	}
+}
+
+function objectMatch(objA, objB) {
+	var keysA = Object.keys(objA);
+	var keysB = Object.keys(objB);
+
+	if (keysA.length !== keysB.length) {
+		return false;
+	}
+
+	for (var i = 0; i < keysA.length; i++) {
+		if (!hasOwn.call(objB, keysA[i])) {
+			return false;
+		} else if (_typeof(objA[keysA[i]]) === 'object' && _typeof(objB[keysB[i]]) === 'object') {
+			if (!objectMatch(objA[keysA[i]], objB[keysB[i]])) {
+				return false;
+			}
+		} else if (!is(objA[keysA[i]], objB[keysA[i]])) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+function shallowEqual(objA, objB) {
+	if (is(objA, objB)) return true;
+
+	if ((typeof objA === 'undefined' ? 'undefined' : _typeof(objA)) !== 'object' || objA === null || (typeof objB === 'undefined' ? 'undefined' : _typeof(objB)) !== 'object' || objB === null) {
+		console.log('Object type is wrong or null');
+		return false;
+	}
+
+	return objectMatch(objA, objB);
+}
+
 var connectFactory = function connectFactory(Provider) {
 	return function () {
 		var stateToProps = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : identity;
@@ -37,7 +101,10 @@ var connectFactory = function connectFactory(Provider) {
 			var updateFromStore = function updateFromStore(vnode) {
 				var state = vnode.state;
 
-				state.props = Object.assign({}, state.props || {}, dispatchToProps(Provider.store.dispatch, state.props), stateToProps(Provider.store.getState(), state.props));
+				var newProps = Object.assign({}, state.props || {}, dispatchToProps(Provider.store.dispatch, state.props), stateToProps(Provider.store.getState(), state.props));
+				if (!shallowEqual(newProps, state.props || {})) {
+					state.props = newProps;
+				}
 			};
 			var handleSubscription = function handleSubscription() {
 				updateFromStore(this);

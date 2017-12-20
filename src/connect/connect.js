@@ -1,16 +1,21 @@
 import identity from '../utils/identity'
+import shallowEquals from '../utils/shallowEquals'
+
 const connectFactory = Provider => (
 	stateToProps = identity,
 	dispatchToProps = identity
 ) => Component => {
 	const updateFromStore = function(vnode) {
 		const { state } = vnode
-		state.props = Object.assign(
+		const newProps = Object.assign(
 			{},
 			state.props || {},
 			dispatchToProps(Provider.store.dispatch, state.props),
 			stateToProps(Provider.store.getState(), state.props)
 		)
+		if (!shallowEquals(newProps, state.props || {})) {
+			state.props = newProps
+		}
 	}
 	const handleSubscription = function() {
 		updateFromStore(this)
