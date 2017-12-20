@@ -47,7 +47,6 @@ export default function shallowEqual(objA, objB) {
 		typeof objB !== 'object' ||
 		objB === null
 	) {
-		console.log(`Object type is wrong or null`)
 		return false
 	}
 
