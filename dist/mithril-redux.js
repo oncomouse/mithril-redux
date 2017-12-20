@@ -1,3 +1,9 @@
+(function (global, factory) {
+	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
+	typeof define === 'function' && define.amd ? define(['exports'], factory) :
+	(factory((global['Mithril Redux'] = {})));
+}(this, (function (exports) { 'use strict';
+
 var classCallCheck = function (instance, Constructor) {
   if (!(instance instanceof Constructor)) {
     throw new TypeError("Cannot call a class as a function");
@@ -89,4 +95,9 @@ var Provider = new _Provider();
 // Generate a connected connect() function:
 var connect = connectFactory(Provider);
 
-export { Provider, connect };
+exports.Provider = Provider;
+exports.connect = connect;
+
+Object.defineProperty(exports, '__esModule', { value: true });
+
+})));
